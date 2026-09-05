@@ -6,6 +6,9 @@ export const proxyWithHeader=(serviceUrl)=>{
             if(srcReq.user){
               proxyReqOpts.headers["x-user-id"]=srcReq.user.userId
             }
+                        if(srcReq.cookies?.session){
+                            proxyReqOpts.headers["x-session-id"]=srcReq.cookies.session
+                        }
             return proxyReqOpts
         }
     })

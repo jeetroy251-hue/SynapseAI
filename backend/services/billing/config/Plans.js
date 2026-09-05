@@ -20,7 +20,7 @@ export const PLANS={
 
         credits:500,
 
-        validy:30
+        validity:30
     },
 
     pro:{

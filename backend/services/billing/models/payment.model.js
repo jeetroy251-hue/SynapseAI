@@ -18,6 +18,10 @@ const paymentSchema=new mongoose.Schema({
     credits:{
         type:Number
     },
+     plan: {
+        type: String,
+        required: true
+    },
     status:{
         type:String,
         enum:["created","paid","failed"],

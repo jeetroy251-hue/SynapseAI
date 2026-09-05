@@ -1,11 +1,13 @@
 import { PLANS } from "../config/Plans.js"
 import razorpay from "../config/razorpay.js"
 import Payment from "../models/payment.model.js"
+import crypto from "crypto"
+import axios from "axios"
 
-export const createOrder=async ()=>{
+export const createOrder=async (req,res)=>{
     try {
         const {plan}=req.body
-        const userId=requestAnimationFrame.headers["x-user-id"]
+       const userId = req.headers["x-user-id"]
         const selectedPlan=PLANS[plan]
 
         if(!selectedPlan){
@@ -35,13 +37,13 @@ export const createOrder=async ()=>{
     }
 }
 
-export const verifyPayment=async ()=>{
+export const verifyPayment=async (req,res)=>{
     try {
         const {razorpay_order_id,razorpay_payment_id,razorpay_signature}=req.body
 
         const generateSignature=crypto
                                      .createHmac("sha256",process.env.RAZORPAY_KEY_SECRET)
-                                     .update(`${razorpay_order_id} | ${razorpay_payment_id}`)
+                                     .update(`${razorpay_order_id}|${razorpay_payment_id}`)
                                      .digest("hex")
 
     if(generateSignature!==razorpay_signature){
@@ -58,9 +60,17 @@ export const verifyPayment=async ()=>{
     payment.paymentId=razorpay_payment_id
     await payment.save()
 
-    await axios.post(`${process.env.AUTH_SERVICE}/update-plan`,{userId:payment.userId,plan:payment.plan,credits:payment.credits})
+    const { data: user } = await axios.post(
+        `${process.env.AUTH_SERVICE}/update-plan`,
+        {
+            userId: payment.userId,
+            plan: payment.plan,
+            credits: payment.credits,
+            sessionId: req.headers["x-session-id"]
+        }
+    )
 
-    return res.status(200).json({message:"Payment Verified"})
+    return res.status(200).json({ message: "Payment Verified", user })
 
     } catch (error) {
     return res.status(500).json({message:`Verify payment error ${error}`})    
