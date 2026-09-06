@@ -22,7 +22,7 @@ export const codingAgent = async (state) => {
     const intent = intentResponse.content
     if (intent == "CODE_GENERATION") {
         const prompt = `
-            You are CortexAI Coding Agent.
+            You are SynapseAI Coding Agent.
 
             Generate the requested project.
 
@@ -122,6 +122,7 @@ FILES
         const res = await llm.invoke(prompt)
         const raw = res.content.trim()
         const data = JSON.parse(raw)
+
         return {
             ...state,
             aiResponse: "Code generated successfully",

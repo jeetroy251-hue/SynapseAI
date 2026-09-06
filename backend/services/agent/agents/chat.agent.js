@@ -4,7 +4,9 @@ import { getMemory } from "../config/memory.js"
 
 export const chatAgent=async(state)=>{
 
+
     try {
+
         const llm=await getModel("chat")
 
     const history=await getMemory(state.conversationId)
@@ -18,7 +20,7 @@ export const chatAgent=async(state)=>{
     `:""
 
     const systemPrompt=`
-    You are CortexAI, an intelligent AI assistant.
+    You are SynapseAI, an intelligent AI assistant.
 
     ${searchContext}
 

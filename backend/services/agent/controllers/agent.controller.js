@@ -2,17 +2,25 @@ import axios from "axios"
 import { graph } from "../graph/graph.js"
 import {addMessage} from "../config/memory.js"
 import redis from "../../../shared/redis/redis.js"
+import { deductCredits } from "../utils/deductCredits.js"
 
 export const agent=async (req,res)=>{
     try {
         const {prompt,conversationId,agent}=req.body
+        const userId=req.headers["x-user-id"]
+
+        if(!userId){
+            return res.status(400).json({message:"User ID missing"})
+        }
 
         await axios.post(`${process.env.CHAT_SERVICE}/save-message`,{
             conversationId,role:"user",content:prompt
         })
         const result=await graph.invoke({
-            prompt,conversationId,agent
+            prompt,conversationId,agent,userId
         })
+
+        await deductCredits(userId,result.agent)
 
 
 

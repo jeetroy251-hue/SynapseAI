@@ -11,7 +11,7 @@ const MessageList = () => {
       {!messages.length || !selectedConversation?(
         <div className='h-full flex flex-col items-center justify-center gap-4 text-center'>
             <div className='flex flex-col gap-1.5'>
-                <h1 className='text-[20px] font-semibold text-slate-200 tracking-tight'>CortexAI</h1>
+                <h1 className='text-[20px] font-semibold text-slate-200 tracking-tight'>SynapseAI</h1>
                 <p className='text-[15px] font-semibold text-slate-400 tracking-tight'>How can I help you?</p>
                 <p className='text-[13px]  text-slate-600 max-w-[260px] leading-relaxed'>Ask me anything - code,ideas,explanations,or just a quick question</p>
             </div>
