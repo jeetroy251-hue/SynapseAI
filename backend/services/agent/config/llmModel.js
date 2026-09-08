@@ -35,6 +35,8 @@ export const getModel = async (agent) => {
     case "pdf":
       return openrouter
     case "ppt":
+      return 
+    case "imageAnalyzer":
       return gemini
 
     default:

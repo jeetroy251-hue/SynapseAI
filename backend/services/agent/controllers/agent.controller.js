@@ -7,6 +7,7 @@ import { deductCredits } from "../utils/deductCredits.js"
 export const agent=async (req,res)=>{
     try {
         const {prompt,conversationId,agent}=req.body
+        const file=req.file
         const userId=req.headers["x-user-id"]
 
         if(!userId){
@@ -17,7 +18,7 @@ export const agent=async (req,res)=>{
             conversationId,role:"user",content:prompt
         })
         const result=await graph.invoke({
-            prompt,conversationId,agent,userId
+            prompt,conversationId,agent,userId,file
         })
 
         await deductCredits(userId,result.agent)

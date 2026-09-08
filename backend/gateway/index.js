@@ -13,6 +13,10 @@ dotenv.config()
 const port=process.env.PORT
 
 const app=express()
+
+app.use(express.json({ limit: "50mb" }))  // when we will be uploading a large size image The 413 Payload Too Large error occurs because your HTTP request body exceeds the payload size limit configured in Express or your proxy server (express-http-proxy). When sending base64 image strings or large raw image binary data directly through the request body to /api/agent/chat, Express rejects it before reaching your handler.
+app.use(express.urlencoded({ limit: "50mb", extended: true }))
+
 app.use(cors({
     origin:process.env.FRONTEND_URL,
     credentials:true
