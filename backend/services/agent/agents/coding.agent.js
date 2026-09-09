@@ -1,175 +1,217 @@
 import { getModel } from "../config/llmModel.js"
 
 export const codingAgent = async (state) => {
-    const intentLlm = await getModel("intent")
-    const llm = await getModel("coding")
-    const intentResponse = await intentLlm.invoke(`
-        You are an intent classifier.
+    try {
+        const intentLlm = await getModel("intent")
+        const llm = await getModel("coding")
 
-        Return ONLY one of these values.
+        const intentResponse = await intentLlm.invoke(`
+You are an intent classifier.
 
-        CODE_GENERATION
-        CODE_REVIEW
-        CODE_EXPLANATION
-        DEBUGGING
-        OPTIMIZATION
-        CONVERSION
-        DOCUMENTATION
+Return ONLY one of these exact values:
 
-        User Request:
-        ${state.prompt}
-        `)
-    const intent = intentResponse.content
-    if (intent == "CODE_GENERATION") {
-        const prompt = `
-            You are SynapseAI Coding Agent.
+CODE_GENERATION
+CODE_REVIEW
+CODE_EXPLANATION
+DEBUGGING
+OPTIMIZATION
+CONVERSION
+DOCUMENTATION
 
-            Generate the requested project.
+User Request:
+${state.prompt}
+`)
 
-            Default stack:
-            - HTML
-            - CSS 
-            - JavaScript
+        const intent = intentResponse.content.trim()
 
-            Use React/Next.js/ Vue ONLY if explicitly requested
+        console.log("CODING INTENT:", intent)
 
-            Rules:
+        // =========================
+        // CODE GENERATION
+        // =========================
 
-            - Responsive
-            - Modern UI
-            - CSS Variables
-            - Flexbox/Grid
-            - Smooth Scroll
-            - Hover Effects
-            - Beautiful spacing
-            - Single page unless user asks otherwise.
-           IMAGES
-==================
+        if (intent === "CODE_GENERATION") {
 
-When the user requests images, use real Unsplash images.
+            const prompt = `
+You are SynapseAI Coding Agent.
+
+Generate the requested project.
+
+Default stack:
+- HTML
+- CSS
+- JavaScript
+
+Use React/Next.js/Vue ONLY if explicitly requested.
 
 Rules:
-- Every image must have a unique relevant image URL.
-- Use different images for different items.
-- Pizza → pizza image
-- Burger → burger image
-- Pasta → pasta image
-- Salad → salad image
-- Never use the same image URL for multiple different items.
-- Never use placeholder services.
-- Never use local or relative image paths.
-
-Use complete HTTPS URLs from images.unsplash.com.
-
-Example:
-
-Pizza:
-https://images.unsplash.com/photo-1574071318508-1cdbab80d002
-
-Burger:
-https://images.unsplash.com/photo-1568901346375-23c9450c58cd
-
-Pasta:
-https://images.unsplash.com/photo-1473093295043-cdd812d0e601
-
-Salad:
-https://images.unsplash.com/photo-1512621776951-a57141f2eefd
+- Responsive
+- Modern UI
+- CSS Variables
+- Flexbox/Grid
+- Smooth animations
+- Hover effects
+- Beautiful spacing
+- Single page unless user asks otherwise
 
 FILES
 ==================
 
-- index.html must contain only HTML structure.
-- Do NOT include <script src="script.js"></script>.
-- Do NOT include <link rel="stylesheet" href="style.css">.
-- CSS and JavaScript are injected automatically by the preview system.
-- Put all CSS inside style.css.
-- Put all JavaScript inside script.js.
+Return exactly these files:
 
-            Return ONLY valid JSON.
+1. index.html
+2. style.css
+3. script.js
 
-            Schema:
+index.html:
+- Only HTML structure
+- Do NOT include <script src="script.js"></script>
+- Do NOT include <link rel="stylesheet" href="style.css">
 
-            {
-            "files":[
-            {
-               "name":"index.html",
-               "content":"..." 
-            },
-            {
-                "name":"style.css",
-                "content":"..."
-            },
-            {
-                "name":"script.js",
-                "content":"..."
+style.css:
+- Put ALL CSS here
+
+script.js:
+- Put ALL JavaScript here
+
+IMPORTANT:
+- Make the website fully functional.
+- Do not use placeholder services.
+- Do not use local image paths.
+- Use real HTTPS image URLs only when images are needed.
+
+OUTPUT FORMAT
+==================
+
+Return ONLY valid JSON.
+
+The response MUST follow exactly this structure:
+
+{
+  "files": [
+    {
+      "name": "index.html",
+      "content": "..."
+    },
+    {
+      "name": "style.css",
+      "content": "..."
+    },
+    {
+      "name": "script.js",
+      "content": "..."
+    }
+  ]
+}
+
+IMPORTANT:
+- Start directly with {
+- End directly with }
+- No markdown
+- No \`\`\`
+- No explanation
+- No extra text
+
+User Request:
+${state.prompt}
+`
+
+            const response = await llm.invoke(prompt)
+
+            let raw = response.content.trim()
+
+            console.log("========== CODING RAW RESPONSE ==========")
+            console.log(raw)
+
+            // Remove markdown code fences if model adds them
+            raw = raw
+                .replace(/^```json\s*/i, "")
+                .replace(/^```\s*/i, "")
+                .replace(/\s*```$/i, "")
+                .trim()
+
+            let data
+
+            try {
+                data = JSON.parse(raw)
+            } catch (parseError) {
+
+                console.error("========== JSON PARSE ERROR ==========")
+                console.error(parseError)
+                console.error("RAW MODEL RESPONSE:")
+                console.error(raw)
+
+                throw new Error(
+                    `Coding agent returned invalid JSON: ${parseError.message}`
+                )
             }
-            ]
+
+            if (!data.files || !Array.isArray(data.files)) {
+                throw new Error("Coding agent response does not contain valid files array")
             }
 
-            Rules:
+            console.log("FILES GENERATED:", data.files.length)
 
-            - Output must start with{
-            - Output must end with }
-            - No markdown
-            - No explanation
-            - No extra text
-            - No \`\`\`
-            - Never mention intent
+            return {
+                ...state,
 
-            User Request:
-             ${state.prompt}
-            `
-        const res = await llm.invoke(prompt)
-        const raw = res.content.trim()
-        const data = JSON.parse(raw)
+                aiResponse: "Code generated successfully",
+
+                artifacts: [
+                    {
+                        id: Date.now(),
+                        type: "Project",
+                        files: data.files,
+                        title: state.prompt
+                    }
+                ]
+            }
+        }
+
+        // =========================
+        // OTHER CODING REQUESTS
+        // =========================
+
+        const response = await llm.invoke(`
+The user's request is:
+
+${state.prompt}
+
+Return Markdown only.
+
+Never generate project files.
+
+Use headings like:
+
+# Overview
+
+## Explanation
+
+## Problems
+
+## Improvements
+
+## Best Practices
+
+## Optimized Code (if needed)
+
+User Request:
+
+${state.prompt}
+`)
 
         return {
             ...state,
-            aiResponse: "Code generated successfully",
-            artifacts: [
-                {
-                    id: Date.now(),
-                    type: "Project",
-                    files: data.files || [],
-                    title: state.prompt
-
-                }
-            ]
+            aiResponse: response.content,
+            artifacts: []
         }
-    }
 
-    const res = await llm.invoke(`
-            The user's request is:
+    } catch (error) {
 
-            ${intent}
+        console.error("========== CODING AGENT ERROR ==========")
+        console.error("MESSAGE:", error.message)
+        console.error("STACK:", error.stack)
 
-            Return Markdown only.
-
-            Never generate project files.
-
-            Use headings like:
-
-            # Overview 
-
-            ## Explanation
-
-            ## Problems
-
-            ## Improvements
-
-            ## Best Practices
-
-            ## Optimized Code (if needed)
-
-            User Request:
-
-            ${state.prompt}
-            `)
-
-    const data = res.content
-    return {
-        ...state,
-        aiResponse: data,
-        artifacts: []
+        throw error
     }
 }

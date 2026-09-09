@@ -7,7 +7,7 @@ import { deductCredits } from "../utils/deductCredits.js"
 export const agent=async (req,res)=>{
     try {
         const {prompt,conversationId,agent}=req.body
-        const file=req.file
+        const file=req.file || null
         const userId=req.headers["x-user-id"]
 
         if(!userId){
