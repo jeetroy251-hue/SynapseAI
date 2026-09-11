@@ -1,11 +1,14 @@
 import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages"
 import { getModel } from "../config/llmModel.js"
 import { getMemory } from "../config/memory.js"
+import { checkAgentLimit } from "../config/agentlimit.js"
 
 export const chatAgent=async(state)=>{
 
 
     try {
+
+        await checkAgentLimit(state.userId,"chat")
 
         const llm=await getModel("chat")
 
@@ -72,10 +75,12 @@ export const chatAgent=async(state)=>{
         aiResponse:response.content
     }
     } catch (error) {
-        return {
-        ...state,
-        aiResponse:"❌ Failed to generate Response"
-    }
+         console.log(error)
+            return{
+                ...state,
+                aiResponse:error?.data?.message || "failed to generate "
+            }
+
     }
     
 }

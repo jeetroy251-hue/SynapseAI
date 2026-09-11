@@ -2,9 +2,13 @@ import { getModel } from "../config/llmModel.js"
 import { getFromS3 } from "../utils/getFromS3.js"
 import { uploadToS3 } from "../utils/uploadToS3.js"
 import { generatePdf } from "../utils/generatePdf.js"
+import { checkAgentLimit } from "../config/agentlimit.js"
 
 export const pdfAgent=async(state)=>{
+
+  
     try {
+        await checkAgentLimit(state.userId,"pdf")
         const llm=await getModel("pdf")
 
        console.log("🔥 PDF MODEL:", llm.constructor.name)
@@ -51,32 +55,39 @@ if (!res?.content) {
 }
 
 
-        const data=JSON.parse(res.content)
+        const raw=typeof res.content==="string" ? res.content : JSON.stringify(res.content)
+        const cleaned=raw
+            .replace(/^```(?:json)?\s*/i,"")
+            .replace(/\s*```$/,"")
+            .trim()
+        const data=JSON.parse(cleaned)
         const pdfBuffer= await generatePdf(data)
 
         const filename=`pdf-${Date.now()}.pdf`
         await uploadToS3(filename,pdfBuffer,"application/pdf")
 
-        const downloadUrl=await getFromS3(filename,60*10)
+        const downloadName=`${data.title || "document"}.pdf`
+        const downloadUrl=await getFromS3(filename,60*10,downloadName)
 
         return{
             ...state,
-            aiResponse: `# PDF Generated
+            aiResponse:
+`# PDF Generated
 
-            **${data.title}**
+**${data.title || "Your document"}**
 
-            [Download PDF](${downloadUrl})
+[Download PDF](${downloadUrl})
 
-            _Link expires in 10 minutes._
-            `
+_Download expires in 10 minutes._
+`
         }
 
     } catch (error) {
-        console.log(error)
-       return{
-        ...state,
-        aiResponse:"Failed to generate pdf"
-       }
+         console.error("PDF AGENT ERROR:", error)
+            return{
+                ...state,
+                aiResponse:error?.data?.message || `failed to generate pdf: ${error?.message}`
+            }
 
     }
 }

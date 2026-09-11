@@ -1,62 +1,84 @@
 import { getModel } from "../config/llmModel.js"
 import { generatePpt } from "../utils/generatePpt.js"
 import { uploadToS3 } from "../utils/uploadToS3.js"
-import {getFromS3} from "../utils/getFromS3.js"
+import { getFromS3 } from "../utils/getFromS3.js"
+import { checkAgentLimit } from "../config/agentlimit.js"
 
-export const pptAgent=async(state)=>{
+export const pptAgent = async (state) => {
+
     try {
-        const llm=await getModel("ppt")
-        const prompt=`You are a professional designer.
+        await checkAgentLimit(state.userId, "ppt")
 
-        Format:
+        const llm = await getModel("ppt")
 
+        const prompt = `You are a professional designer.
+
+Format:
+
+{
+    "title": "",
+    "subtitle": "",
+    "slides": [
         {
-        "title":"",
-        "subtitle":"",
-        "slides":[
-        {
-        "title":"",
-        "points":[
-        "",
-        "",
-        ""
-        ]
+            "title": "",
+            "points": [
+                "",
+                "",
+                ""
+            ]
         }
-        ]
-        }
+    ]
+}
 
-        Rules:
+Rules:
 
-        - Generate exactly 6 content slides.
-        - Each slide should have 4-6 concise bullet points.
-        - No markdown
-        - No explanation
-        - No code block
-        - Return ONLY JSON.
+- Generate exactly 6 content slides.
+- Each slide should have 4-6 concise bullet points.
+- No markdown
+- No explanation
+- No code block
+- Return ONLY valid JSON.
+- The response must be directly parseable using JSON.parse().
+- Do NOT wrap the response in \`\`\`json or \`\`\`.
 
-        Topic:
+Topic:
 
-        ${state.prompt}
-        
-        `
+${state.prompt}
+`
 
-        const res=await llm.invoke(prompt)
-        const data=JSON.parse(res.content)
-        const ppt=await generatePpt(data)
-        const buffer=await ppt.write({
-            outputType:"nodebuffer"
+        const res = await llm.invoke(prompt)
+
+        // Clean possible markdown code fences from LLM response
+        let content = res.content.trim()
+
+        content = content
+            .replace(/^```json\s*/i, "")
+            .replace(/^```\s*/i, "")
+            .replace(/\s*```$/i, "")
+            .trim()
+
+        // Convert LLM response into JavaScript object
+        const data = JSON.parse(content)
+
+        const ppt = await generatePpt(data)
+
+        const buffer = await ppt.write({
+            outputType: "nodebuffer"
         })
 
-        const filename=`ppt-${Date.now()}.pptx`
+        const filename = `ppt-${Date.now()}.pptx`
 
-        await uploadToS3(filename,buffer,"application/vnd.openxmlformats-officedocument.presentationml.presentation")   
-        const downloadUrl=await getFromS3(filename,24*60*60)
+        await uploadToS3(
+            filename,
+            buffer,
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
 
-        
+        const downloadUrl = await getFromS3(filename, 24 * 60 * 60)
 
-        return{
+        return {
             ...state,
-            aiResponse:`# ✅ Presentation Generated
+            aiResponse: `# ✅ Presentation Generated
 
 **${data.title}**
 
@@ -66,10 +88,12 @@ _Link expires in 10 minutes._`
         }
 
     } catch (error) {
+
         console.log(error)
+
         return {
             ...state,
-            aiResponse:"Failed to generate PPT"
+            aiResponse: error?.data?.message || "failed to generate"
         }
     }
 }

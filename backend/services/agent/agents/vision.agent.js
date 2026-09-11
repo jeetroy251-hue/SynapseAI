@@ -2,11 +2,12 @@ import { getModel } from "../config/llmModel.js"
 import axios from "axios"
 import { uploadToS3 } from "../utils/uploadToS3.js"
 import { getFromS3 } from "../utils/getFromS3.js"
+import { checkAgentLimit } from "../config/agentlimit.js"
 
 export const visionAgent = async (state) => {
 
   try {
-
+    await checkAgentLimit(state.userId,"image")
     const llm = await getModel("image")
 
     console.log("🔥 LLM TYPE:", typeof llm)
@@ -99,13 +100,11 @@ export const visionAgent = async (state) => {
 
   } catch (error) {
 
-    console.error("🔥 VISION AGENT ERROR:", error)
-    console.error("🔥 ERROR MESSAGE:", error.message)
-    console.error("🔥 ERROR RESPONSE:", error.response?.data)
-
-    return {
-      ...state,
-      aiResponse: "❌ Failed to generate image"
-    }
+    console.log(error)
+            return{
+                ...state,
+                aiResponse:error?.data?.message || "failed to generate image",
+          
+     }
   }
 }

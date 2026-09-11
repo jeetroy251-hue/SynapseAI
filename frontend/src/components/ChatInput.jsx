@@ -2,17 +2,18 @@ import { Code2, FileText, Globe, ImageIcon, MessageSquare, Mic, Paperclip, Prese
 import React, { useState, useRef } from 'react'
 import sendMessage from '../../features/sendMessage'
 import { useSelector, useDispatch } from 'react-redux'
-import {  setMessages,addMessage, setArtifacts } from '../redux/messageSlice'
+import {  setMessages,addMessage, setArtifacts,setIsLoading } from '../redux/messageSlice'
 import { addConversation, setConvTitle, setSelectedConversation } from '../redux/conversationSlice'
 import { createConversation } from '../../features/createConversation'
 import { updateConversation } from '../../features/updateConversation'
+
 
 
 const ChatInput = () => {
 const [value,setValue]=useState("")
 const [selectedAgent,setSelectedAgent]=useState("Auto")
 const {selectedConversation}=useSelector(state=>state.conversation)
-const {messages}=useSelector(state=>state.message)
+const {messages,isLoading}=useSelector(state=>state.message)
 const [selectedFile,setSelectedFile]=useState(null)
 const fileRef=useRef(null)
 const dispatch = useDispatch()
@@ -58,7 +59,8 @@ const agents=[
 
 const handleSendMessage=async ()=>{
 
-let conversation=selectedConversation
+    dispatch(setIsLoading(true))
+    let conversation=selectedConversation
 
     if(!conversation){
        const conv=await createConversation()
@@ -80,7 +82,10 @@ let conversation=selectedConversation
     formData.append("prompt",value.trim())
     formData.append("conversationId",conversation?._id)
     formData.append("agent",selectedAgent.toLowerCase())
-    formData.append("file",selectedFile)
+    if(selectedFile){
+        formData.append("file",selectedFile)
+    }
+    
 
     dispatch(addMessage({role:"user",content:value.trim()}))
 
@@ -88,7 +93,7 @@ let conversation=selectedConversation
 
   try {
     const data = await sendMessage(formData)
-    
+    dispatch(setIsLoading(false))
     setSelectedFile(null)
     
     if(data.artifacts?.length){
@@ -104,7 +109,12 @@ let conversation=selectedConversation
     console.log(data)
 
 } catch (error) {
+    dispatch(setIsLoading(false))
     console.error("ChatInput error:", error)
+    dispatch(addMessage({
+        role:"assistant",
+        content:`⚠️ **Error:** ${error?.response?.data?.message || error?.message || "Something went wrong"}`
+    }))
 }
 
     
@@ -212,7 +222,7 @@ let conversation=selectedConversation
                 </button>
             </div>
             <button
-            disabled={!value}
+            disabled={!value && isLoading}
             onClick={handleSendMessage}
              className={`flex items-center justify-center w-8 h-8 rounded-lg border-none cursor-pointer transition-all duration-150  ${value.trim()?"bg-linear-to-br from-indigo-500 to-violet-700 hover:opacity-90 text-white":"bg-white/[0,05] text-slate-600 cursor-not-allowed"}`}>
                 <Send size={17}/>

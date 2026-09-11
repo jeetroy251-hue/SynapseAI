@@ -1,7 +1,7 @@
 import React from 'react'
 import { useState } from 'react'
 import Markdown from 'react-markdown'
-import { ExternalLink, X,Check, Copy } from 'lucide-react'
+import { Download, ExternalLink, X,Check, Copy } from 'lucide-react'
 import remarkGfm from 'remark-gfm'
 import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -10,6 +10,11 @@ function MessageBubble ({role,content,images}) {
     const isUser=role=="user"
     const [lightBox,setLightBox]=useState(null)
     const [copiedCode,setCopiedCode]=useState("")
+
+    const normalizedContent = String(content ?? "")
+        .replace(/^```(?:md|markdown)?\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim()
 
     const copyCode=async (code)=>{
      await navigator.clipboard.writeText(code)
@@ -82,20 +87,28 @@ function MessageBubble ({role,content,images}) {
                       {children}
                   </td>
               ),
-           a:({href,children})=>(
-          <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="my-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg
-          bg-indigo-500 hover:bg-indigo-600
-          text-white font-medium no-underline
-          transition-all duration-200"
+           a:({href,children})=>{
+  const isFile=/\.(pdf|ppt|pptx|doc|docx|xlsx|csv|zip)$/i.test(href||"")
+  const urlPart=(href||"").split("?")[0]
+  const fileName=decodeURIComponent(urlPart.split("/").pop()||"file")
+  return (
+    <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    download={isFile ? fileName : undefined}
+    className={
+      isFile
+      ? "my-2 inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-medium no-underline shadow-[0_2px_12px_rgba(99,102,241,.35)] transition-all duration-200"
+      : "my-2 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white font-medium no-underline transition-all duration-200"
+    }
   >
+    {isFile ? <Download size={16}/> : null}
     {children}
-    <ExternalLink size={16}/>
+    {isFile ? <span className="text-[11px] opacity-80">{fileName}</span> : <ExternalLink size={16}/>}
   </a>
-),
+  )
+},
               code:({className,children})=>{
                 const value=String(children)
                 .trim()
@@ -160,7 +173,7 @@ function MessageBubble ({role,content,images}) {
               }
             }}
             >
-                {content}
+                {normalizedContent}
             </Markdown>
 
 

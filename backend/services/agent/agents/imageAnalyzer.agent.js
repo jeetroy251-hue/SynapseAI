@@ -1,8 +1,11 @@
 import { HumanMessage, SystemMessage } from "@langchain/core/messages"
 import { getModel } from "../config/llmModel.js"
 import fs from "fs/promises"
+import { checkAgentLimit } from "../config/agentlimit.js"
 
 export const imageAnalyzer = async (state) => {
+
+    await checkAgentLimit(state.userId,"image")
 
     try {
 
@@ -78,10 +81,11 @@ Rules:
             try {
                 await fs.unlink(state.file.path)
             } catch (error) {
-                console.error(
-                    "Failed to delete temp file:",
-                    error.message
-                )
+                 console.log(error)
+            return{
+                ...state,
+                aiResponse:error?.data?.message || "failed to generate image"
+            }
             }
 
         }

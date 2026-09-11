@@ -18,7 +18,7 @@ app.use(express.json({ limit: "50mb" }))  // when we will be uploading a large s
 app.use(express.urlencoded({ limit: "50mb", extended: true }))
 
 app.use(cors({
-    origin:process.env.FRONTEND_URL,
+    origin:(origin,callback)=>callback(null,origin || true),
     credentials:true
 }))
 app.use(cookieParser())

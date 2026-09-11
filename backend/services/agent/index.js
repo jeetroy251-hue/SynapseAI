@@ -11,6 +11,16 @@ const app=express()
 app.use(express.json())  // middileware used to fetch data from req.body 
 app.use("/",router)
 
+app.use((err,req,res,next)=>{
+    console.error("AGENT-SERVICE ERROR:", err)
+
+    if(err.status){
+        return res.status(err.status).json(err.data)
+    }
+
+    return res.status(500).json({message:`agent error ${err.message || err}`})
+})
+
 app.get("/",(req,res)=>{
     res.json({message:"hello from agent"})
 })
