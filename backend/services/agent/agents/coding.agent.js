@@ -1,4 +1,4 @@
-import { checkAgentLimit } from "../config/agentlimit.js"
+import { checkAgentLimit } from "../config/agentLimit.js"
 import { getModel } from "../config/llmModel.js"
 
 export const codingAgent = async (state) => {

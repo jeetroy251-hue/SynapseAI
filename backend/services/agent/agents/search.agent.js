@@ -1,4 +1,4 @@
-import { checkAgentLimit } from "../config/agentlimit.js"
+import { checkAgentLimit } from "../config/agentLimit.js"
 import { searchTool } from "../config/tavily.js"
 
 export const searchAgent=async(state)=>{

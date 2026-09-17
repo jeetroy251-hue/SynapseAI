@@ -2,7 +2,7 @@ import { getModel } from "../config/llmModel.js"
 import { generatePpt } from "../utils/generatePpt.js"
 import { uploadToS3 } from "../utils/uploadToS3.js"
 import { getFromS3 } from "../utils/getFromS3.js"
-import { checkAgentLimit } from "../config/agentlimit.js"
+import { checkAgentLimit } from "../config/agentLimit.js"
 
 export const pptAgent = async (state) => {
 

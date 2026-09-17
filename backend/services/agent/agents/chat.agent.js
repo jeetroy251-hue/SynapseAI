@@ -1,7 +1,7 @@
 import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages"
 import { getModel } from "../config/llmModel.js"
 import { getMemory } from "../config/memory.js"
-import { checkAgentLimit } from "../config/agentlimit.js"
+import { checkAgentLimit } from "../config/agentLimit.js"
 
 export const chatAgent=async(state)=>{
 
