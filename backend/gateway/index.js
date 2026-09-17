@@ -32,7 +32,7 @@ app.get("/api/me",protect,getCurrentUser)
 
 
 app.get("/",(req,res)=>{
-    res.json({message:"hello from gateway"})
+    res.json({message:"hello from gateway service"})
 })
 
 app.listen(port,()=>{
