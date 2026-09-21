@@ -104,57 +104,95 @@ export const updateUserPayment=async (req,res)=>{
 }
 
 
-export const deductCredits=async (req,res)=>{
+export const deductCredits = async (req, res) => {
     try {
-        const {userId,agent}=req.body
+        const { userId, agent } = req.body
 
-        const COST={
-            chat:1,
+        console.log("========== DEDUCT CREDITS START ==========")
 
-            search:5,
+        console.log("REQUEST BODY:", {
+            userId,
+            agent
+        })
 
-            coding:10,
-
-            pdf:10,
-
-            ppt:10,
-
-            vision:10
+        const COST = {
+            chat: 1,
+            search: 5,
+            coding: 10,
+            pdf: 10,
+            ppt: 10,
+            vision: 10
         }
 
-        const user=await User.findById(userId)
+        const user = await User.findById(userId)
 
-        if(!user){
-            return res.status(400).json({message:"user not found"})
+        console.log("USER FOUND:", !!user)
+
+        if (!user) {
+            console.log("❌ USER NOT FOUND")
+            return res.status(400).json({
+                message: "user not found"
+            })
         }
 
-        const requiredCredits=COST[agent] || 1
+        const requiredCredits = COST[agent] || 1
 
-        if(user.credits<requiredCredits){
-            return res.status(400).json({message:"Not enough credits"})
+        console.log("CREDIT INFO:", {
+            agent,
+            requiredCredits,
+            currentCredits: user.credits
+        })
+
+        if (user.credits < requiredCredits) {
+            console.log("❌ NOT ENOUGH CREDITS")
+
+            return res.status(400).json({
+                message: "Not enough credits"
+            })
         }
 
-        user.credits-=requiredCredits
+        user.credits -= requiredCredits
+
         await user.save()
 
-        const activeSessionId = await redis.get(`user-session-${user?._id}`)
+        console.log("✅ CREDITS DEDUCTED")
+        console.log("REMAINING CREDITS:", user.credits)
+
+        const activeSessionId = await redis.get(
+            `user-session-${user?._id}`
+        )
+
         if (activeSessionId) {
-            await redis.set(`session-${activeSessionId}`,JSON.stringify({
-             userId:user._id,
-            name:user.name,
-            email:user.email,
-            avatar:user.avatar,
-            plan:user.plan,
-            credits:user.credits,
-            totalCredits:user.totalCredits,
-            planExpiresAt:user.planExpiresAt
-            }),"EX",7*24*60*60)
+            await redis.set(
+                `session-${activeSessionId}`,
+                JSON.stringify({
+                    userId: user._id,
+                    name: user.name,
+                    email: user.email,
+                    avatar: user.avatar,
+                    plan: user.plan,
+                    credits: user.credits,
+                    totalCredits: user.totalCredits,
+                    planExpiresAt: user.planExpiresAt
+                }),
+                "EX",
+                7 * 24 * 60 * 60
+            )
         }
 
-        return res.status(200).json({success:true,credits:user.credits})
+        console.log("========== DEDUCT CREDITS END ==========")
+
+        return res.status(200).json({
+            success: true,
+            credits: user.credits
+        })
+
     } catch (error) {
-            return res.status(500).json({
-        message: `Update user payment error: ${error.message}`
-    })
+
+        console.error("❌ DEDUCT CREDITS ERROR:", error)
+
+        return res.status(500).json({
+            message: `Deduct credits error: ${error.message}`
+        })
     }
 }
