@@ -2,7 +2,9 @@ import proxy from "express-http-proxy"
 
 export const proxyWithHeader = (serviceUrl) => { 
     return proxy(serviceUrl, {
-        limit: "50mb", // Overrides the default 1mb limit in raw-body
+        limit: "50mb", // Overrides default limit
+        proxyTimeoutMs: 180000, // 3 minutes timeout for proxy socket connection
+        timeout: 180000,        // 3 minutes timeout for request handling
         proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
             if (srcReq.user) {
               proxyReqOpts.headers["x-user-id"] = srcReq.user.userId
